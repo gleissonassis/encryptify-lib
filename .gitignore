@@ -72,3 +72,6 @@ azure.sh
 
 *.encryptify
 *.original.jpg
+
+*.identity
+tmp

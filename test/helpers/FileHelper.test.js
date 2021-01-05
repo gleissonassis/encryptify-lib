@@ -1,6 +1,7 @@
-import { expect } from 'chai';
-import FileHelper from '../../src/helpers/FileHelper';
-import IdentityHelper from '../../src/helpers/IdentityHelper';
+import chai from 'chai';
+const { expect } = chai;
+import FileHelper from '../../src/helpers/FileHelper.js';
+import IdentityHelper from '../../src/helpers/IdentityHelper.js';
 
 describe('FileHelper', () => {
   const path = './test/helpers';

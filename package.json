@@ -1,11 +1,12 @@
 {
   "name": "encryptify-tool",
-  "version": "1.0.0",
+  "type": "module",
+  "version": "0.0.1",
   "description": "",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "test": "nyc --reporter=html mocha -r esm --timeout 60000 -R spec --recursive --exit"
+    "test": "nyc --reporter=html mocha --timeout 60000 -R spec --recursive --exit"
   },
   "repository": {
     "type": "git",
@@ -23,7 +24,6 @@
     "eslint": "^7.17.0",
     "eslint-config-prettier": "^7.1.0",
     "eslint-plugin-prettier": "^3.3.0",
-    "esm": "^3.2.25",
     "mocha": "^8.2.1",
     "nyc": "^15.1.0",
     "prettier": "^2.2.1"
@@ -33,6 +33,7 @@
     "eth-crypto": "^1.8.0",
     "is-binary-path": "^2.1.0",
     "istextorbinary": "^5.12.0",
-    "js-sha256": "^0.9.0"
+    "js-sha256": "^0.9.0",
+    "yargs": "^16.2.0"
   }
 }

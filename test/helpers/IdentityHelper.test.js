@@ -1,5 +1,6 @@
-import { expect } from 'chai';
-import IdentityHelper from '../../src/helpers/IdentityHelper';
+import chai from 'chai';
+const { expect } = chai;
+import IdentityHelper from '../../src/helpers/IdentityHelper.js';
 
 describe('IdentityHelper', () => {
   const commonIdentity = { 
@@ -103,5 +104,17 @@ describe('IdentityHelper', () => {
     expect(message).to.be.equal(originalMessage);
   });
 
+  it.only('should compute the same secret', async () => {
+    const data = 'info';
+    const identityFrom = await identityHelper.generateIdentity();
+    const identityTo = await identityHelper.generateIdentity();
 
+    const secret1 = identityHelper.computeSecret(identityFrom.privateKey, identityTo.publicKey);
+    const secret2 = identityHelper.computeSecret(identityTo.privateKey, identityFrom.publicKey);
+
+    const encrypted = identityHelper.encrypt(secret1, data);
+
+    expect(secret1).to.be.equal(secret2);
+    expect(data).to.be.equal(identityHelper.decrypt(secret2, encrypted));
+  });
 });

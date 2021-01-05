@@ -1,6 +1,6 @@
-const fs = require('fs');
+import fs from 'fs';
 import { getEncoding } from 'istextorbinary';
-const isBinaryPath = require('is-binary-path');
+import isBinaryPath from 'is-binary-path';
 
 export default class FileHelper {
   openFile (path, encoding) {

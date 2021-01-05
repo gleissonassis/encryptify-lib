@@ -1,5 +1,6 @@
 import EthCrypto from 'eth-crypto';
 import Cryptr from 'cryptr';
+import crypto from 'crypto';
 import sha256 from 'js-sha256';
 
 export default class IdentityHelper {
@@ -57,6 +58,21 @@ export default class IdentityHelper {
 
   recoverPublicKey (signature, hash) {
     return  EthCrypto.recoverPublicKey(signature, hash);
+  }
+
+  computeSecret (fromPrivateKey, toPublicKey) {
+    const from = crypto.createECDH('secp256k1');
+    const to = crypto.createECDH('secp256k1');
+
+    from.setPrivateKey(Buffer.from(fromPrivateKey.substr(2), 'hex'));
+
+    let decompressedPublicKey = EthCrypto.publicKey.decompress(toPublicKey);
+
+    if (!decompressedPublicKey.startsWith('04')) {
+      decompressedPublicKey = '04' + decompressedPublicKey;
+    }
+
+    return from.computeSecret(Buffer.from(decompressedPublicKey, 'hex')).toString('hex');
   }
 
   async encryptWithPublicKey (publicKey, message) {
