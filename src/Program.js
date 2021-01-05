@@ -22,14 +22,14 @@ export default class Program {
     const ih = new IdentityHelper();
     const fh = new FileHelper();
 
-    console.log('Generating new identity...');
+    console.log('Generating new identity');
     const identity = await ih.generateIdentity(pk);
     const json = JSON.stringify(identity);
 
-    console.log('Encrypting the identity...');
+    console.log('Encrypting the identity');
     const encryptedJSON = ih.encrypt(p.toString(), json);
 
-    console.log(`Saving identity to ${f} ...`);
+    console.log(`Saving identity to ${f} `);
     await fh.writeFile(f, encryptedJSON, 'utf8');
 
     console.log(`Identity stored successfully in ${f}!`);
@@ -44,7 +44,7 @@ export default class Program {
   }
 
   async checkIdentity ({f, p}) {
-    console.log(`Checking identity file...`);
+    console.log(`Checking identity file`);
     
     const identity = await this.openIdentity({f, p});
 
@@ -53,67 +53,70 @@ export default class Program {
 
   async showIdentity ({f, p}) {
     const identity = await this.openIdentity({f, p});
-
-    console.log(`Identity file opened successfully!`);
     console.log(identity);
   }
 
-  async encryptFile ({f, p, s, e, o, t}) {
+  async encryptFile ({f, p, s, m, e, o, t}) {
     const ih = new IdentityHelper();
     const fh = new FileHelper();
 
-    console.log('Opening identity file...');
     const identity = await this.openIdentity({f, p});
-    console.log(`Identity file opened successfully!\n\nPublic key:\n${identity.publicKey}`);
 
-    const encoding = e || fh.isBinaryPath(s) ? 'binary' : 'utf8';
+    let content = m;
 
-    console.log(`Opening source file ${s} as ${encoding}...`);
+    if (m === undefined) {
+      const encoding = e || fh.isBinaryPath(s) ? 'binary' : 'utf8';
 
-    const fileContent = await fh.openFile(s, encoding);
-
-    console.log(`Encrypting file content...`);
+      content = await fh.openFile(s, encoding);
+    }
 
     let encryptedFileContent = null;
 
     if (!t) {
-      encryptedFileContent = await ih.encryptWithPublicKey(identity.compressedPublicKey, fileContent);
+      encryptedFileContent = await ih.encryptWithPublicKey(identity.compressedPublicKey, content);
     } else {
-      console.log(`Encrypting using compted secret to ${t}`, )
       const secret = ih.computeSecret(identity.privateKey, t);
-      encryptedFileContent = ih.encrypt(secret, fileContent);
+      encryptedFileContent = ih.encrypt(secret, content);
     }
 
-    const encryptedFileName = o || `${s}.encryptify`;
-    console.log(`Saving encrypted file content to ${encryptedFileName}`);
-    await fh.writeFile(encryptedFileName, encryptedFileContent, 'utf8');
+    if (m === undefined) {
+      const encryptedFileName = o || `${s}.encryptify`;
+      await fh.writeFile(encryptedFileName, encryptedFileContent, 'utf8');
+      console.log(`File encrypted sucessfully!`);
+    } else {
+      console.log(encryptedFileContent);
+    }
   }
 
-  async decryptFile ({f, p, s, e, o, t}) {
+  async decryptFile ({f, p, s, m, e, o, t}) {
     const ih = new IdentityHelper();
     const fh = new FileHelper();
 
-    console.log('Opening identity file...');
     const identity = await this.openIdentity({f, p});
-    console.log(`Identity file opened successfully!\n\nPublic key:\n${identity.publicKey}`);
 
-    console.log(`Opening encrypted file ${s} ...`);
+    let encryptedFile = m;
 
-    const encryptedFile = await fh.openFile(s, 'utf8');
+    if (m === undefined) {
+      encryptedFile = await fh.openFile(s, 'utf8');
+    }
 
     let decryptedFileContent = null;
 
     if (!t) {
       decryptedFileContent = await ih.decryptWithPrivateKey(identity.privateKey, encryptedFile);
     } else {
-      console.log(`Decrypting using compted secret to ${t}`, )
       const secret = ih.computeSecret(identity.privateKey, t);
       decryptedFileContent = ih.decrypt(secret, encryptedFile);
     }
 
     const encoding = e || fh.detectEncoding(decryptedFileContent) ? 'binary' : 'utf8';
 
-    await fh.writeFile(o, decryptedFileContent, encoding);
+    if (m === undefined) {
+      await fh.writeFile(o, decryptedFileContent, encoding);
+      console.log(`File decrypted sucessfully!`);
+    } else {
+      console.log(decryptedFileContent);
+    }
   }
 
   async showSecret ({f, p, t}) {

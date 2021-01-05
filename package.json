@@ -1,24 +1,27 @@
 {
-  "name": "encryptify-tool",
+  "name": "encryptify-cli",
   "type": "module",
   "version": "0.0.1",
   "description": "",
   "main": "src/index.js",
+  "bin": {
+    "encryptify-cli": "./bin/index.js"
+  },
+  "preferGlobal": true,
   "scripts": {
-    "start": "node src/index.js",
     "test": "nyc --reporter=html mocha --timeout 60000 -R spec --recursive --exit"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gleissonassis/encryptify-tool.git"
+    "url": "git+https://github.com/gleissonassis/encryptify-cli.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/gleissonassis/encryptify-tool/issues"
+    "url": "https://github.com/gleissonassis/encryptify-cli/issues"
   },
-  "homepage": "https://github.com/gleissonassis/encryptify-tool#readme",
+  "homepage": "https://github.com/gleissonassis/encryptify-cli#readme",
   "devDependencies": {
     "chai": "^4.2.0",
     "eslint": "^7.17.0",
