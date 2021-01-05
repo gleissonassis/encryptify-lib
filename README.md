@@ -1,4 +1,4 @@
-# encryptif-cli
+# encryptify-cli
 
 This is a proposal tool for a future service called Encryptify. The main goal is provide a tool to exchange files and messages in a encrypted and secure way. It is a CLI (command line interface) to created identities (private and public key encrypted file), encrypt and decrypt files and messages.
 
