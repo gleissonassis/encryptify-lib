@@ -1,7 +1,7 @@
 {
   "name": "encryptify-lib",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
   "main": "src/index.js",
   "preferGlobal": true,
@@ -28,7 +28,7 @@
     "prettier": "^2.2.1"
   },
   "dependencies": {
-    "cryptr": "^6.0.2",
+    "cryptr": "^4.0.0",
     "eth-crypto": "^1.8.0",
     "is-binary-path": "^2.1.0",
     "istextorbinary": "^5.12.0",
