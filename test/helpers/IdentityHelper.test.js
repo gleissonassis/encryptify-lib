@@ -2,6 +2,7 @@ import chai from 'chai';
 const { expect } = chai;
 import { IdentityHelper } from '../../src/index.js';
 
+
 describe('IdentityHelper', () => {
   const commonIdentity = { 
     address: '0x3f243FdacE01Cfd9719f7359c94BA11361f32471',
@@ -117,4 +118,42 @@ describe('IdentityHelper', () => {
     expect(secret1).to.be.equal(secret2);
     expect(data).to.be.equal(identityHelper.decrypt(secret2, encrypted));
   });
+
+  it('should encrypt and decrypt a Buffer and an ArrayBuffer', async () => {
+    function toArrayBuffer (buf) {
+      var ab = new ArrayBuffer(buf.length);
+      var view = new Uint8Array(ab);
+      for (var i = 0; i < buf.length; ++i) {
+        view[i] = buf[i];
+      }
+
+      return ab;
+    };
+
+    function arrayBuffersAreEqual(a, b) {
+      return dataViewsAreEqual(new DataView(a), new DataView(b));
+    }
+
+    function dataViewsAreEqual(a, b) {
+      if (a.byteLength !== b.byteLength) return false;
+      for (let i=0; i < a.byteLength; i++) {
+        if (a.getUint8(i) !== b.getUint8(i)) return false;
+      }
+      return true;
+    }
+
+    const buffer = Buffer.from('hello');
+    const arrayBuffer = toArrayBuffer(buffer);
+
+    const identity = await identityHelper.generateIdentity();
+
+    const encryptedBuffer = await identityHelper.encryptBuffer(identity, null, buffer);
+    const encryptedArrayBuffer = await identityHelper.encryptArrayBuffer(identity, null, arrayBuffer);
+
+    const decryptedBuffer = await identityHelper.decryptBuffer(identity, null, encryptedBuffer);
+    const decryptedArrayBuffer = toArrayBuffer(await identityHelper.decryptBuffer(identity, null, encryptedArrayBuffer));
+
+    expect(Buffer.compare(buffer, decryptedBuffer)).to.be.equal(0);
+    expect(arrayBuffersAreEqual(arrayBuffer, decryptedArrayBuffer)).to.be.true;
+  })
 });

@@ -1,6 +1,7 @@
 import fs from 'fs';
 import { getEncoding } from 'istextorbinary';
 import isBinaryPath from 'is-binary-path';
+import IdentityHelper from './IdentityHelper.js';
 
 export default class FileHelper {
   openFile (path, encoding) {
@@ -21,6 +22,16 @@ export default class FileHelper {
         resolve();
       });
     });
+  }
+
+  async encryptFileContent (identity, targetPublicKey, filePath) {
+    const ih = new IdentityHelper();
+
+    return ih.encryptBuffer(
+      identity, 
+      targetPublicKey, 
+      await this.openFile(filePath)
+    );
   }
 
   detectEncoding (buffer) {

@@ -75,6 +75,64 @@ export default class IdentityHelper {
     return from.computeSecret(Buffer.from(decompressedPublicKey, 'hex')).toString('hex');
   }
 
+  encryptToTargetPublicKey(privateKey, targetPublicKey, content) {
+    const secret = ih.computeSecret(privateKey, targetPublicKey);
+    return this.encrypt(secret, content);
+  }
+
+  decryptFromTargetPublicKey(privateKey, targetPublicKey, content) {
+    const secret = ih.computeSecret(privateKey, targetPublicKey);
+    return this.decrypt(secret, content);
+  }
+
+  async encryptBuffer ({publicKey, compressedPublicKey, privateKey}, targetPublicKey, buffer) {
+    if (!targetPublicKey) {
+      return await this.encryptWithPublicKey(
+        publicKey || compressedPublicKey, 
+        buffer.toString('hex')
+      );
+    } else {
+      return ih.encryptToTargetPublicKey(privateKey, targetPublicKey, buffer.toString('hex'));
+    }
+  }
+
+  async decryptBuffer ({privateKey}, targetPublicKey, encryptedBuffer) {
+    let decryptedBuffer = null;
+
+    if (!targetPublicKey) {
+      decryptedBuffer = await this.decryptWithPrivateKey(
+        privateKey,
+        encryptedBuffer
+      );
+    } else {
+      decryptedBuffer = this.decryptFromTargetPublicKey(
+        privateKey,
+        targetPublicKey,
+        encryptedBuffer
+      );
+    }
+
+    return Buffer.from(decryptedBuffer, 'hex');
+  }
+
+  encryptArrayBuffer (identity, targetPublicKey, arrayBuffer) {
+    return this.encryptBuffer(
+      identity, 
+      targetPublicKey, 
+      this.toBuffer(arrayBuffer)
+    );
+  }
+
+  toBuffer (ab) {
+    var buf = Buffer.alloc(ab.byteLength);
+    var view = new Uint8Array(ab);
+    for (var i = 0; i < buf.length; ++i) {
+      buf[i] = view[i];
+    }
+
+    return buf;
+  }
+
   async encryptWithPublicKey (publicKey, message) {
     const encryptedData = await EthCrypto.encryptWithPublicKey(publicKey, message);
     const hexString = EthCrypto.cipher.stringify(encryptedData);
