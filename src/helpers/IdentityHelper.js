@@ -4,19 +4,19 @@ import crypto from 'crypto';
 import sha256 from 'js-sha256';
 
 export default class IdentityHelper {
-  generateHash(data) {
+  static generateHash(data) {
     return sha256(data);
   }
 
-  sign (privateKey, hash) {
+  static sign (privateKey, hash) {
     return EthCrypto.sign(privateKey, hash);
   }
 
-  async generateIdentity (privateKey) {
+  static async generateIdentity (privateKey) {
     if (privateKey) {
       const publicKey = EthCrypto.publicKeyByPrivateKey(privateKey);
       const address = EthCrypto.publicKey.toAddress(publicKey);
-      const compressedPublicKey = this.compressPublicKey(publicKey);
+      const compressedPublicKey = IdentityHelper.compressPublicKey(publicKey);
       
       return {
         privateKey,
@@ -29,38 +29,38 @@ export default class IdentityHelper {
 
       return {
         ...identity,
-        compressedPublicKey: this.compressPublicKey(identity.publicKey),
+        compressedPublicKey: IdentityHelper.compressPublicKey(identity.publicKey),
       };
     }
   }
 
-  encrypt (secret, content) {
+  static encrypt (secret, content) {
     var cryptr = new Cryptr(secret);
     return cryptr.encrypt(content);
   }
 
-  decrypt (secret, content) {
+  static decrypt (secret, content) {
     var cryptr = new Cryptr(secret);
     return cryptr.decrypt(content);
   }
 
-  compressPublicKey (publicKey) {
+  static compressPublicKey (publicKey) {
     return EthCrypto.publicKey.compress(publicKey);
   }
 
-  isCompressedPublicKey(publicKey) {
+  static isCompressedPublicKey(publicKey) {
     return publicKey && (publicKey.startsWith('02') || publicKey.startsWith('03'));
   }
 
-  recoverAddress (signature, hash) {
+  static recoverAddress (signature, hash) {
     return  EthCrypto.recover(signature, hash);
   }
 
-  recoverPublicKey (signature, hash) {
+  static recoverPublicKey (signature, hash) {
     return  EthCrypto.recoverPublicKey(signature, hash);
   }
 
-  computeSecret (fromPrivateKey, toPublicKey) {
+  static computeSecret (fromPrivateKey, toPublicKey) {
     const from = crypto.createECDH('secp256k1');
     const to = crypto.createECDH('secp256k1');
 
@@ -75,37 +75,37 @@ export default class IdentityHelper {
     return from.computeSecret(Buffer.from(decompressedPublicKey, 'hex')).toString('hex');
   }
 
-  encryptToTargetPublicKey(privateKey, targetPublicKey, content) {
-    const secret = ih.computeSecret(privateKey, targetPublicKey);
-    return this.encrypt(secret, content);
+  static encryptToTargetPublicKey(privateKey, targetPublicKey, content) {
+    const secret = IdentityHelper.computeSecret(privateKey, targetPublicKey);
+    return IdentityHelper.encrypt(secret, content);
   }
 
-  decryptFromTargetPublicKey(privateKey, targetPublicKey, content) {
-    const secret = ih.computeSecret(privateKey, targetPublicKey);
-    return this.decrypt(secret, content);
+  static decryptFromTargetPublicKey(privateKey, targetPublicKey, content) {
+    const secret = IdentityHelper.computeSecret(privateKey, targetPublicKey);
+    return IdentityHelper.decrypt(secret, content);
   }
 
-  async encryptBuffer ({publicKey, compressedPublicKey, privateKey}, targetPublicKey, buffer) {
+  static async encryptBuffer ({publicKey, compressedPublicKey, privateKey}, targetPublicKey, buffer) {
     if (!targetPublicKey) {
-      return await this.encryptWithPublicKey(
+      return await IdentityHelper.encryptWithPublicKey(
         publicKey || compressedPublicKey, 
         buffer.toString('hex')
       );
     } else {
-      return ih.encryptToTargetPublicKey(privateKey, targetPublicKey, buffer.toString('hex'));
+      return IdentityHelper.encryptToTargetPublicKey(privateKey, targetPublicKey, buffer.toString('hex'));
     }
   }
 
-  async decryptBuffer ({privateKey}, targetPublicKey, encryptedBuffer) {
+  static async decryptBuffer ({privateKey}, targetPublicKey, encryptedBuffer) {
     let decryptedBuffer = null;
 
     if (!targetPublicKey) {
-      decryptedBuffer = await this.decryptWithPrivateKey(
+      decryptedBuffer = await IdentityHelper.decryptWithPrivateKey(
         privateKey,
         encryptedBuffer
       );
     } else {
-      decryptedBuffer = this.decryptFromTargetPublicKey(
+      decryptedBuffer = IdentityHelper.decryptFromTargetPublicKey(
         privateKey,
         targetPublicKey,
         encryptedBuffer
@@ -115,15 +115,15 @@ export default class IdentityHelper {
     return Buffer.from(decryptedBuffer, 'hex');
   }
 
-  encryptArrayBuffer (identity, targetPublicKey, arrayBuffer) {
-    return this.encryptBuffer(
+  static encryptArrayBuffer (identity, targetPublicKey, arrayBuffer) {
+    return IdentityHelper.encryptBuffer(
       identity, 
       targetPublicKey, 
-      this.toBuffer(arrayBuffer)
+      IdentityHelper.toBuffer(arrayBuffer)
     );
   }
 
-  toBuffer (ab) {
+  static toBuffer (ab) {
     var buf = Buffer.alloc(ab.byteLength);
     var view = new Uint8Array(ab);
     for (var i = 0; i < buf.length; ++i) {
@@ -133,14 +133,14 @@ export default class IdentityHelper {
     return buf;
   }
 
-  async encryptWithPublicKey (publicKey, message) {
+  static async encryptWithPublicKey (publicKey, message) {
     const encryptedData = await EthCrypto.encryptWithPublicKey(publicKey, message);
     const hexString = EthCrypto.cipher.stringify(encryptedData);
 
     return EthCrypto.hex.compress(hexString, true);
   }
 
-  async decryptWithPrivateKey (privateKey, compressedEncryptedData) {
+  static async decryptWithPrivateKey (privateKey, compressedEncryptedData) {
     const decompressedHexString = EthCrypto.hex.decompress(compressedEncryptedData, true);
     const encryptedData = EthCrypto.cipher.parse(decompressedHexString.substr(2));
 

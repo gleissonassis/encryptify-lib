@@ -4,7 +4,7 @@ import isBinaryPath from 'is-binary-path';
 import IdentityHelper from './IdentityHelper.js';
 
 export default class FileHelper {
-  openFile (path, encoding) {
+  static openFile (path, encoding) {
     return new Promise((resolve, reject) => {
       fs.readFile(path, encoding, (err,data) => {
         if (err) {
@@ -15,7 +15,7 @@ export default class FileHelper {
     });
   }
 
-  writeFile (path, content, encoding) {
+  static writeFile (path, content, encoding) {
     return new Promise((resolve, reject) => {
       fs.writeFile(path, content, {encoding}, function (err) {
         if (err) return reject(err);
@@ -24,21 +24,50 @@ export default class FileHelper {
     });
   }
 
-  async encryptFileContent (identity, targetPublicKey, filePath) {
-    const ih = new IdentityHelper();
-
-    return ih.encryptBuffer(
+  static async encryptFileContent (identity, targetPublicKey, filePath) {
+    return IdentityHelper.encryptBuffer(
       identity, 
       targetPublicKey, 
       await this.openFile(filePath)
     );
   }
 
-  detectEncoding (buffer) {
+  static detectEncoding (buffer) {
     return getEncoding(buffer);
   }
 
-  isBinaryPath (path) {
+  static isBinaryPath (path) {
     return isBinaryPath(path);
+  }
+
+  static async stringify (identity, targetAccount, {title, path, mimeType, content}) {
+    const file = {
+      title: await IdentityHelper.encryptBuffer(
+        identity,
+        targetAccount,
+        Buffer.from(title)
+      ),
+      path: await IdentityHelper.encryptBuffer(
+        identity,
+        targetAccount,
+        Buffer.from(path)
+      ),
+      mimeType: await IdentityHelper.encryptBuffer(
+        identity,
+        targetAccount,
+        Buffer.from(mimeType)
+      ),
+      content: await IdentityHelper.encryptBuffer(
+        identity,
+        targetAccount,
+        content
+      ),
+      mimeTypeHash: IdentityHelper.generateHash(mimeType),
+      pathHash: IdentityHelper.generateHash(path),
+      contentHash: IdentityHelper.generateHash(content),
+      format: 'v1',
+    };
+
+    return JSON.stringify(file);
   }
 }

@@ -11,26 +11,43 @@ describe('FileHelper', () => {
   const filePath = `${path}/${file}`;
   const originalFilePath = `${path}/${originalFile}`;
 
-  const fileHelper = new FileHelper();
-
   it('should open a file, encrypt with the public key decrypt with private key and compare the data', async () => {
-    const ih = new IdentityHelper();
-    const identity = await ih.generateIdentity();
+    const identity = await IdentityHelper.generateIdentity();
 
-    const encoding = fileHelper.isBinaryPath(filePath) ? 'binary':'utf8';
+    const encoding = FileHelper.isBinaryPath(filePath) ? 'binary':'utf8';
 
-    const fileContent = await fileHelper.openFile(filePath, encoding);
-    const encryptedFileContent = await ih.encryptWithPublicKey(identity.compressedPublicKey, fileContent);
+    const fileContent = await FileHelper.openFile(filePath, encoding);
+    const encryptedFileContent = await IdentityHelper.encryptWithPublicKey(identity.compressedPublicKey, fileContent);
 
-    await fileHelper.writeFile(encryptedFileName, encryptedFileContent, 'utf8');
+    await FileHelper.writeFile(encryptedFileName, encryptedFileContent, 'utf8');
 
-    const encryptedFile = await fileHelper.openFile(encryptedFileName, 'utf8');
-    const decryptedFile = await ih.decryptWithPrivateKey(identity.privateKey, encryptedFile);
+    const encryptedFile = await FileHelper.openFile(encryptedFileName, 'utf8');
+    const decryptedFile = await IdentityHelper.decryptWithPrivateKey(identity.privateKey, encryptedFile);
 
-    await fileHelper.writeFile(originalFilePath, decryptedFile, encoding);
+    await FileHelper.writeFile(originalFilePath, decryptedFile, encoding);
 
-    const newFileContent = await fileHelper.openFile(originalFilePath, encoding);
+    const newFileContent = await FileHelper.openFile(originalFilePath, encoding);
 
     expect(fileContent).to.be.equal(newFileContent);
+  });
+
+  it('should create a string version of file metadata', async () => {
+    const identity = await IdentityHelper.generateIdentity();
+    const result = await FileHelper.stringify(
+      identity,
+      null,
+      {
+        title: 'File title',
+        mimeType: 'text/plain',
+        path: '/',
+        content: Buffer.from('hello'),
+      }
+    );
+
+    const file = JSON.parse(result);
+
+    expect('File title').to.be.equal((await IdentityHelper.decryptBuffer(identity, null, file.title)).toString());
+    expect('text/plain').to.be.equal((await IdentityHelper.decryptBuffer(identity, null, file.mimeType)).toString());
+    expect('hello').to.be.equal((await IdentityHelper.decryptBuffer(identity, null, file.content)).toString());
   });
 });
