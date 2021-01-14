@@ -70,4 +70,27 @@ export default class FileHelper {
 
     return JSON.stringify(file);
   }
+
+  static async parse (identity, targetAccount, fileContent) {
+    const file = JSON.parse(fileContent);
+
+    const [
+      title, 
+      mimeType, 
+      path, 
+      content
+    ] = await Promise.all([
+      IdentityHelper.decryptBuffer(identity, targetAccount, file.title),
+      IdentityHelper.decryptBuffer(identity, targetAccount, file.mimeType),
+      IdentityHelper.decryptBuffer(identity, targetAccount, file.path),
+      file.content ? IdentityHelper.decryptBuffer(identity, targetAccount, file.content) : null,
+    ]);
+
+    return {
+      title: title.toString(),
+      mimeType: mimeType.toString(),
+      path: path.toString(),
+      content,
+    };
+  }
 }

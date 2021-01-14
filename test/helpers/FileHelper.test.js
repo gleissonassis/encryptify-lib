@@ -31,11 +31,13 @@ describe('FileHelper', () => {
     expect(fileContent).to.be.equal(newFileContent);
   });
 
-  it('should create a string version of file metadata', async () => {
+  it('should create a string version of a encrypted file metadata', async () => {
     const identity = await IdentityHelper.generateIdentity();
+    const targetIdentity = await IdentityHelper.generateIdentity();
+
     const result = await FileHelper.stringify(
       identity,
-      null,
+      targetIdentity.compressedPublicKey,
       {
         title: 'File title',
         mimeType: 'text/plain',
@@ -44,10 +46,15 @@ describe('FileHelper', () => {
       }
     );
 
-    const file = JSON.parse(result);
+    const file = await FileHelper.parse(
+      targetIdentity, 
+      identity.compressedPublicKey, 
+      result
+    );
 
-    expect('File title').to.be.equal((await IdentityHelper.decryptBuffer(identity, null, file.title)).toString());
-    expect('text/plain').to.be.equal((await IdentityHelper.decryptBuffer(identity, null, file.mimeType)).toString());
-    expect('hello').to.be.equal((await IdentityHelper.decryptBuffer(identity, null, file.content)).toString());
+    expect('File title').to.be.equal(file.title);
+    expect('/').to.be.equal(file.path);
+    expect('text/plain').to.be.equal(file.mimeType);
+    expect('hello').to.be.equal(file.content.toString());
   });
 });
