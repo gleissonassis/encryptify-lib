@@ -41,6 +41,9 @@ export default class FileHelper {
   }
 
   static async stringify (identity, targetAccount, {title, path, mimeType, content}) {
+    const contentHash = IdentityHelper.generateHash(content);
+    const contentHashSignature = IdentityHelper.sign(identity.privateKey, contentHash);
+
     const file = {
       title: await IdentityHelper.encryptBuffer(
         identity,
@@ -64,7 +67,8 @@ export default class FileHelper {
       ),
       mimeTypeHash: IdentityHelper.generateHash(mimeType),
       pathHash: IdentityHelper.generateHash(path),
-      contentHash: IdentityHelper.generateHash(content),
+      contentHash,
+      contentHashSignature,
       format: 'v1',
     };
 
@@ -73,6 +77,21 @@ export default class FileHelper {
 
   static async parse (identity, targetAccount, fileContent) {
     const file = JSON.parse(fileContent);
+    const recoveredAddress = IdentityHelper.recoverAddress(file.contentHashSignature, file.contentHash);
+
+    if (!targetAccount && recoveredAddress !== identity.address) {
+      throw {
+        code: 'INVALID_SIGNATURE',
+        exptedAddress: identity.address,
+        recoveredAddress
+      };
+    } else if (recoveredAddress !== IdentityHelper.publickeyToETHAddress(targetAccount)) {
+      throw {
+        code: 'INVALID_SIGNATURE',
+        exptedAddress: IdentityHelper.publickeyToETHAddress(targetAccount),
+        recoveredAddress
+      };
+    }
 
     const [
       title, 

@@ -34,6 +34,10 @@ export default class IdentityHelper {
     }
   }
 
+  static publickeyToETHAddress (publicKey) {
+    return EthCrypto.publicKey.toAddress(publicKey);
+  }
+
   static encrypt (secret, content) {
     var cryptr = new Cryptr(secret);
     return cryptr.encrypt(content);
