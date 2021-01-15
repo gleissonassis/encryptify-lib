@@ -45,6 +45,7 @@ describe('FileHelper', () => {
         content: Buffer.from('hello'),
       }
     );
+    
 
     const file = await FileHelper.parse(
       targetIdentity, 

@@ -86,13 +86,15 @@ export default class IdentityHelper {
   }
 
   static async encryptBuffer ({publicKey, compressedPublicKey, privateKey}, targetPublicKey, buffer) {
+    const hexBuffer = Buffer.from(buffer).toString('hex');
+
     if (!targetPublicKey) {
       return await IdentityHelper.encryptWithPublicKey(
         publicKey || compressedPublicKey, 
-        buffer.toString('hex')
+        hexBuffer
       );
     } else {
-      return IdentityHelper.encryptToTargetPublicKey(privateKey, targetPublicKey, buffer.toString('hex'));
+      return IdentityHelper.encryptToTargetPublicKey(privateKey, targetPublicKey, hexBuffer);
     }
   }
 
