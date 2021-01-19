@@ -1,12 +1,12 @@
 {
   "name": "encryptify-lib",
-  "type": "module",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "",
+  "type": "module",
   "main": "src/index.js",
   "preferGlobal": true,
   "scripts": {
-    "test": "nyc --reporter=html mocha --timeout 60000 -R spec --recursive --exit"
+    "test": "nyc --require esm --reporter=lcov --reporter=text-summary mocha --timeout 60000 -R spec --recursive --exit"
   },
   "repository": {
     "type": "git",
@@ -23,6 +23,7 @@
     "eslint": "^7.17.0",
     "eslint-config-prettier": "^7.1.0",
     "eslint-plugin-prettier": "^3.3.0",
+    "esm": "^3.2.25",
     "file-api": "^0.10.4",
     "filereader": "^0.10.3",
     "mocha": "^8.2.1",
