@@ -4,9 +4,9 @@ import isBinaryPath from 'is-binary-path';
 import IdentityHelper from './IdentityHelper.js';
 
 export default class FileHelper {
-  static openFile (path, encoding) {
+  static openFile(path, encoding) {
     return new Promise((resolve, reject) => {
-      fs.readFile(path, encoding, (err,data) => {
+      fs.readFile(path, encoding, (err, data) => {
         if (err) {
           reject(err);
         }
@@ -15,60 +15,57 @@ export default class FileHelper {
     });
   }
 
-  static writeFile (path, content, encoding) {
+  static writeFile(path, content, encoding) {
     return new Promise((resolve, reject) => {
-      fs.writeFile(path, content, {encoding}, function (err) {
+      fs.writeFile(path, content, { encoding }, function (err) {
         if (err) return reject(err);
         resolve();
       });
     });
   }
 
-  static async encryptFileContent (identity, targetPublicKey, filePath) {
+  static async encryptFileContent(identity, targetPublicKey, filePath) {
     return IdentityHelper.encryptBuffer(
-      identity, 
-      targetPublicKey, 
+      identity,
+      targetPublicKey,
       await this.openFile(filePath)
     );
   }
 
-  static detectEncoding (buffer) {
+  static detectEncoding(buffer) {
     return getEncoding(buffer);
   }
 
-  static isBinaryPath (path) {
+  static isBinaryPath(path) {
     return isBinaryPath(path);
   }
 
-  static async stringify (identity, targetAccount, {
-    title, 
-    path, 
-    mimeType, 
-    content,
-    indexes,
-    metadata
-  }) {
+  static async stringify(
+    identity,
+    targetAccount,
+    { title, path, mimeType, content, indexes, metadata }
+  ) {
     if (!title || !path || !mimeType) {
       throw {
         status: 409,
         code: 'REQUIRED_FIELDS',
         message: 'Title, path, and mimeType are required fields',
-      }
+      };
     }
-    
+
     if (!content && !metadata) {
       throw {
         status: 409,
         code: 'REQUIRED_FIELDS',
         message: 'You must enter the content or metadata field',
-      }
+      };
     }
 
     let metadataHash = null;
     let metadataHashSignature = null;
 
     if (indexes && indexes.length) {
-      const invalidIndex = indexes.find(i => !/^[A-F0-9]+$/i.test(i));
+      const invalidIndex = indexes.find((i) => !/^[A-F0-9]+$/i.test(i));
 
       if (invalidIndex) {
         throw {
@@ -76,12 +73,14 @@ export default class FileHelper {
           code: 'INVALID_INDEX',
           message: 'The indexes must be a hexadecimal string format',
           invalidIndex,
-        }
+        };
       }
     }
 
     const contentHash = content ? IdentityHelper.generateHash(content) : null;
-    const contentHashSignature = content ? IdentityHelper.sign(identity.privateKey, contentHash) : null;
+    const contentHashSignature = content
+      ? IdentityHelper.sign(identity.privateKey, contentHash)
+      : null;
 
     if (metadata) {
       const json = JSON.stringify(metadata);
@@ -89,10 +88,13 @@ export default class FileHelper {
       metadata = await IdentityHelper.encryptBuffer(
         identity,
         targetAccount,
-        Buffer.from(json),
+        Buffer.from(json)
       );
       metadataHash = IdentityHelper.generateHash(json);
-      metadataHashSignature = IdentityHelper.sign(identity.privateKey, metadataHash);
+      metadataHashSignature = IdentityHelper.sign(
+        identity.privateKey,
+        metadataHash
+      );
     }
 
     const file = {
@@ -111,11 +113,9 @@ export default class FileHelper {
         targetAccount,
         Buffer.from(mimeType)
       ),
-      content: content ? await IdentityHelper.encryptBuffer(
-        identity,
-        targetAccount,
-        content
-      ) : null,
+      content: content
+        ? await IdentityHelper.encryptBuffer(identity, targetAccount, content)
+        : null,
       mimeTypeHash: IdentityHelper.generateHash(mimeType),
       pathHash: IdentityHelper.generateHash(path),
       contentHash,
@@ -130,7 +130,7 @@ export default class FileHelper {
     return JSON.stringify(file);
   }
 
-  static async parse (identity, targetAccount, fileContent) {
+  static async parse(identity, targetAccount, fileContent) {
     const file = JSON.parse(fileContent);
 
     const signature = file.contentHashSignature || file.metadataHashSignature;
@@ -142,28 +142,28 @@ export default class FileHelper {
       throw {
         code: 'INVALID_SIGNATURE',
         exptedAddress: identity.address,
-        recoveredAddress
+        recoveredAddress,
       };
-    } else if (recoveredAddress !== IdentityHelper.publickeyToETHAddress(targetAccount)) {
+    } else if (
+      recoveredAddress !== IdentityHelper.publickeyToETHAddress(targetAccount)
+    ) {
       throw {
         code: 'INVALID_SIGNATURE',
         exptedAddress: IdentityHelper.publickeyToETHAddress(targetAccount),
-        recoveredAddress
+        recoveredAddress,
       };
     }
 
-    const [
-      title, 
-      mimeType, 
-      path, 
-      content,
-      metadata,
-    ] = await Promise.all([
+    const [title, mimeType, path, content, metadata] = await Promise.all([
       IdentityHelper.decryptBuffer(identity, targetAccount, file.title),
       IdentityHelper.decryptBuffer(identity, targetAccount, file.mimeType),
       IdentityHelper.decryptBuffer(identity, targetAccount, file.path),
-      file.content ? IdentityHelper.decryptBuffer(identity, targetAccount, file.content) : null,
-      file.metadata ? IdentityHelper.decryptBuffer(identity, targetAccount, file.metadata) : null
+      file.content
+        ? IdentityHelper.decryptBuffer(identity, targetAccount, file.content)
+        : null,
+      file.metadata
+        ? IdentityHelper.decryptBuffer(identity, targetAccount, file.metadata)
+        : null,
     ]);
 
     return {
