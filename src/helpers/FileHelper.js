@@ -141,7 +141,7 @@ export default class FileHelper {
       hash
     ).toUpperCase();
 
-    if (!targetAccount && recoveredAddress !== identity.address) {
+    if (!targetAccount && recoveredAddress !== identity.address.toUpperCase()) {
       throw {
         code: 'INVALID_SIGNATURE',
         exptedAddress: identity.address,
