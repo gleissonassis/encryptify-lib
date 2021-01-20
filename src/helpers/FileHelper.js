@@ -136,7 +136,10 @@ export default class FileHelper {
     const signature = file.contentHashSignature || file.metadataHashSignature;
     const hash = file.contentHash || file.metadataHash;
 
-    let recoveredAddress = IdentityHelper.recoverAddress(signature, hash);
+    let recoveredAddress = IdentityHelper.recoverAddress(
+      signature,
+      hash
+    ).toUpperCase();
 
     if (!targetAccount && recoveredAddress !== identity.address) {
       throw {
@@ -145,7 +148,9 @@ export default class FileHelper {
         recoveredAddress,
       };
     } else if (
-      recoveredAddress !== IdentityHelper.publickeyToETHAddress(targetAccount)
+      targetAccount &&
+      recoveredAddress !==
+        IdentityHelper.publickeyToETHAddress(targetAccount).toUpperCase()
     ) {
       throw {
         code: 'INVALID_SIGNATURE',
