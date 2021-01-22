@@ -189,4 +189,4 @@ module.exports = class IdentityHelper {
 
     return await EthCrypto.decryptWithPrivateKey(privateKey, encryptedData);
   }
-}
+};

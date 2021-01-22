@@ -1,4 +1,4 @@
 const IdentityHelper = require('./helpers/IdentityHelper');
-const FileHelper = require('./helpers/FileHelper');
+const DocumentHelper = require('./helpers/DocumentHelper');
 
-module.exports = { IdentityHelper, FileHelper };
+module.exports = { IdentityHelper, DocumentHelper };

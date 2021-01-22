@@ -3,7 +3,7 @@ const { getEncoding } = require('istextorbinary');
 const isBinaryPath = require('is-binary-path');
 const IdentityHelper = require('./IdentityHelper');
 
-module.exports = class FileHelper {
+module.exports = class DocumentHelper {
   static openFile(path, encoding) {
     return new Promise((resolve, reject) => {
       fs.readFile(path, encoding, (err, data) => {
@@ -43,7 +43,7 @@ module.exports = class FileHelper {
   static async stringify(
     identity,
     targetAccount,
-    { title, path, mimeType, content, indexes, metadata }
+    { title, path, mimeType, content, indexes, metadata, keywords }
   ) {
     if (!title || !path || !mimeType) {
       throw {
@@ -61,20 +61,32 @@ module.exports = class FileHelper {
       };
     }
 
+    if (this.indexes && !Array.isArray(this.indexes)) {
+      throw {
+        status: 409,
+        code: 'INDEXES_MUST_BE_ARRAY',
+      };
+    }
+
     let metadataHash = null;
     let metadataHashSignature = null;
 
-    if (indexes && indexes.length) {
-      const invalidIndex = indexes.find((i) => !/^[A-F0-9]+$/i.test(i));
+    if (indexes) {
+      const newIndexes = {};
 
-      if (invalidIndex) {
-        throw {
-          status: 409,
-          code: 'INVALID_INDEX',
-          message: 'The indexes must be a hexadecimal string format',
-          invalidIndex,
-        };
+      for (const index in indexes) {
+        newIndexes[
+          IdentityHelper.generateHash(index)
+        ] = IdentityHelper.generateHash(indexes[index]);
       }
+
+      indexes = newIndexes;
+    }
+
+    if (keywords && Array.isArray(keywords)) {
+      keywords = keywords.map((keyword) =>
+        IdentityHelper.generateHash(keyword)
+      );
     }
 
     const contentHash = content ? IdentityHelper.generateHash(content) : null;
@@ -121,6 +133,7 @@ module.exports = class FileHelper {
       contentHash,
       contentHashSignature,
       indexes,
+      keywords,
       metadata,
       metadataHash,
       metadataHashSignature,
@@ -180,4 +193,4 @@ module.exports = class FileHelper {
       metadata: metadata ? JSON.parse(metadata.toString()) : null,
     };
   }
-}
+};
