@@ -1,7 +1,4 @@
-import IdentityHelper from './helpers/IdentityHelper.js';
-import FileHelper from './helpers/FileHelper.js';
+const IdentityHelper = require('./helpers/IdentityHelper');
+const FileHelper = require('./helpers/FileHelper');
 
-export { 
-  IdentityHelper, 
-  FileHelper,
-};
+module.exports = { IdentityHelper, FileHelper };

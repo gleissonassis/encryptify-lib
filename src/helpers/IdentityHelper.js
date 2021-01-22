@@ -1,9 +1,25 @@
-import EthCrypto from 'eth-crypto';
-import Cryptr from 'cryptr';
-import crypto from 'crypto';
-import sha256 from 'js-sha256';
+const EthCrypto = require('eth-crypto');
+const Cryptr = require('cryptr');
+const crypto = require('crypto');
+const sha256 = require('js-sha256');
+const bip39 = require('bip39');
+const bip32 = require('bip32');
 
-export default class IdentityHelper {
+module.exports = class IdentityHelper {
+  static generateMnemonic() {
+    return bip39.generateMnemonic();
+  }
+
+  static generateSeed(phrase) {
+    return bip39.mnemonicToSeed(phrase);
+  }
+
+  static derivePrivateKey(seed, path) {
+    const key = bip32.fromSeed(seed);
+    const derive = key.derivePath(path);
+    return derive.privateKey.toString('hex');
+  }
+
   static generateHash(data) {
     return sha256(data);
   }

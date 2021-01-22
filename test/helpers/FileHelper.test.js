@@ -1,6 +1,6 @@
-import chai from 'chai';
+const chai = require('chai');
 const { expect } = chai;
-import { FileHelper, IdentityHelper } from '../../src/index.js';
+const { FileHelper, IdentityHelper } = require('../../src/index');
 
 describe('FileHelper', () => {
   const path = './test/helpers';
@@ -14,19 +14,28 @@ describe('FileHelper', () => {
   it('should open a file, encrypt with the public key decrypt with private key and compare the data', async () => {
     const identity = await IdentityHelper.generateIdentity();
 
-    const encoding = FileHelper.isBinaryPath(filePath) ? 'binary':'utf8';
+    const encoding = FileHelper.isBinaryPath(filePath) ? 'binary' : 'utf8';
 
     const fileContent = await FileHelper.openFile(filePath, encoding);
-    const encryptedFileContent = await IdentityHelper.encryptWithPublicKey(identity.compressedPublicKey, fileContent);
+    const encryptedFileContent = await IdentityHelper.encryptWithPublicKey(
+      identity.compressedPublicKey,
+      fileContent
+    );
 
     await FileHelper.writeFile(encryptedFileName, encryptedFileContent, 'utf8');
 
     const encryptedFile = await FileHelper.openFile(encryptedFileName, 'utf8');
-    const decryptedFile = await IdentityHelper.decryptWithPrivateKey(identity.privateKey, encryptedFile);
+    const decryptedFile = await IdentityHelper.decryptWithPrivateKey(
+      identity.privateKey,
+      encryptedFile
+    );
 
     await FileHelper.writeFile(originalFilePath, decryptedFile, encoding);
 
-    const newFileContent = await FileHelper.openFile(originalFilePath, encoding);
+    const newFileContent = await FileHelper.openFile(
+      originalFilePath,
+      encoding
+    );
 
     expect(fileContent).to.be.equal(newFileContent);
   });
@@ -45,18 +54,17 @@ describe('FileHelper', () => {
         content: Buffer.from('hello'),
         indexes: [
           '97817c0c49994eb500ad0a5e7e2d8aed51977b26424d508f66e4e8887746a152',
-          '2c70e12b7a0646f92279f427c7b38e7334d8e5389cff167a1dc30e73f826b683'
+          '2c70e12b7a0646f92279f427c7b38e7334d8e5389cff167a1dc30e73f826b683',
         ],
         metadata: {
           key: 'value',
         },
       }
     );
-    
 
     const file = await FileHelper.parse(
-      targetIdentity, 
-      identity.compressedPublicKey, 
+      targetIdentity,
+      identity.compressedPublicKey,
       result
     );
 
@@ -81,7 +89,7 @@ describe('FileHelper', () => {
         path: '/',
         indexes: [
           '97817c0c49994eb500ad0a5e7e2d8aed51977b26424d508f66e4e8887746a152',
-          '2c70e12b7a0646f92279f427c7b38e7334d8e5389cff167a1dc30e73f826b683'
+          '2c70e12b7a0646f92279f427c7b38e7334d8e5389cff167a1dc30e73f826b683',
         ],
         metadata: {
           key: 'value',
@@ -90,8 +98,8 @@ describe('FileHelper', () => {
     );
 
     const file = await FileHelper.parse(
-      targetIdentity, 
-      identity.compressedPublicKey, 
+      targetIdentity,
+      identity.compressedPublicKey,
       result
     );
 
@@ -107,19 +115,15 @@ describe('FileHelper', () => {
       const identity = await IdentityHelper.generateIdentity();
       const targetIdentity = await IdentityHelper.generateIdentity();
 
-      const result = await FileHelper.stringify(
-        identity,
-        targetIdentity.compressedPublicKey,
-        {
-          title: 'File title',
-          mimeType: 'text/plain',
-          path: '/',
-          indexes: [
-            '97817c0c49994eb500ad0a5e7e2d8aed51977b26424d508f66e4e8887746a152',
-            '2c70e12b7a0646f92279f427c7b38e7334d8e5389cff167a1dc30e73f826b683'
-          ],
-        }
-      );
+      await FileHelper.stringify(identity, targetIdentity.compressedPublicKey, {
+        title: 'File title',
+        mimeType: 'text/plain',
+        path: '/',
+        indexes: [
+          '97817c0c49994eb500ad0a5e7e2d8aed51977b26424d508f66e4e8887746a152',
+          '2c70e12b7a0646f92279f427c7b38e7334d8e5389cff167a1dc30e73f826b683',
+        ],
+      });
       throw {};
     } catch (e) {
       expect(e.code).to.be.equal('REQUIRED_FIELDS');
@@ -131,16 +135,12 @@ describe('FileHelper', () => {
       const identity = await IdentityHelper.generateIdentity();
       const targetIdentity = await IdentityHelper.generateIdentity();
 
-      const result = await FileHelper.stringify(
-        identity,
-        targetIdentity.compressedPublicKey,
-        {
-          indexes: [
-            '97817c0c49994eb500ad0a5e7e2d8aed51977b26424d508f66e4e8887746a152',
-            '2c70e12b7a0646f92279f427c7b38e7334d8e5389cff167a1dc30e73f826b683'
-          ],
-        }
-      );
+      await FileHelper.stringify(identity, targetIdentity.compressedPublicKey, {
+        indexes: [
+          '97817c0c49994eb500ad0a5e7e2d8aed51977b26424d508f66e4e8887746a152',
+          '2c70e12b7a0646f92279f427c7b38e7334d8e5389cff167a1dc30e73f826b683',
+        ],
+      });
       throw {};
     } catch (e) {
       expect(e.code).to.be.equal('REQUIRED_FIELDS');
@@ -152,23 +152,19 @@ describe('FileHelper', () => {
       const identity = await IdentityHelper.generateIdentity();
       const targetIdentity = await IdentityHelper.generateIdentity();
 
-      const result = await FileHelper.stringify(
-        identity,
-        targetIdentity.compressedPublicKey,
-        {
-          title: 'File title',
-          mimeType: 'text/plain',
-          path: '/',
-          content: Buffer.from('hello'),
-          indexes: [
-            'teste',
-            '2c70e12b7a0646f92279f427c7b38e7334d8e5389cff167a1dc30e73f826b683'
-          ],
-          metadata: {
-            key: 'value',
-          },
-        }
-      );
+      await FileHelper.stringify(identity, targetIdentity.compressedPublicKey, {
+        title: 'File title',
+        mimeType: 'text/plain',
+        path: '/',
+        content: Buffer.from('hello'),
+        indexes: [
+          'teste',
+          '2c70e12b7a0646f92279f427c7b38e7334d8e5389cff167a1dc30e73f826b683',
+        ],
+        metadata: {
+          key: 'value',
+        },
+      });
 
       throw {};
     } catch (e) {

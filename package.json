@@ -1,12 +1,11 @@
 {
   "name": "encryptify-lib",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "",
-  "type": "module",
   "main": "src/index.js",
   "preferGlobal": true,
   "scripts": {
-    "test": "nyc --require esm --reporter=lcov --reporter=text-summary mocha --timeout 60000 -R spec --recursive --exit"
+    "test": "nyc --reporter=html --reporter=text mocha --timeout 60000 -R spec --recursive --exit"
   },
   "repository": {
     "type": "git",
@@ -20,6 +19,7 @@
   "homepage": "https://github.com/gleissonassis/encryptify-lib#readme",
   "devDependencies": {
     "chai": "^4.2.0",
+    "cross-env": "^7.0.3",
     "eslint": "^7.18.0",
     "eslint-config-prettier": "^7.2.0",
     "eslint-config-standard": "^16.0.2",
@@ -27,16 +27,17 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^3.3.1",
     "eslint-plugin-promise": "^4.2.1",
-    "esm": "^3.2.25",
-    "file-api": "^0.10.4",
-    "filereader": "^0.10.3",
     "mocha": "^8.2.1",
     "nyc": "^15.1.0",
     "prettier": "^2.2.1"
   },
   "dependencies": {
+    "bip32": "^2.0.6",
+    "bip39": "^3.0.3",
     "cryptr": "^4.0.0",
+    "esm": "^3.2.25",
     "eth-crypto": "^1.8.0",
+    "hdkey": "^2.0.1",
     "is-binary-path": "^2.1.0",
     "istextorbinary": "^5.12.0",
     "js-sha256": "^0.9.0"

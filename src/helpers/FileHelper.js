@@ -1,9 +1,9 @@
-import fs from 'fs';
-import { getEncoding } from 'istextorbinary';
-import isBinaryPath from 'is-binary-path';
-import IdentityHelper from './IdentityHelper.js';
+const fs = require('fs');
+const { getEncoding } = require('istextorbinary');
+const isBinaryPath = require('is-binary-path');
+const IdentityHelper = require('./IdentityHelper');
 
-export default class FileHelper {
+module.exports = class FileHelper {
   static openFile(path, encoding) {
     return new Promise((resolve, reject) => {
       fs.readFile(path, encoding, (err, data) => {
