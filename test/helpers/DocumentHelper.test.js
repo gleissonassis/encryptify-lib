@@ -55,11 +55,11 @@ describe('DocumentHelper', () => {
       identity,
       targetIdentity.compressedPublicKey,
       {
+        type: 'document',
         title: 'File title',
         mimeType: 'text/plain',
         path: '/',
         content: Buffer.from('hello'),
-        keywords: ['hello', 'world'],
         metadata: {
           key: 'value',
         },
@@ -74,16 +74,75 @@ describe('DocumentHelper', () => {
 
     expect('File title').to.be.equal(file.title);
     expect('/').to.be.equal(file.path);
+    expect('document').to.be.equal(file.type);
     expect('text/plain').to.be.equal(file.mimeType);
     expect('hello').to.be.equal(file.content.toString());
-    expect(file.keywords.length).to.be.equal(2);
-    expect(file.keywords[0]).to.be.equal(
-      '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824'
-    );
-    expect(file.keywords[1]).to.be.equal(
-      '486ea46224d1bb4fb680f34f7c9ad96a8f24ec88be73ea8e5a6c65260e9cb8a7'
-    );
     expect(file.metadata.key).to.be.equal('value');
+  });
+
+  it('should fail to decrypt with an invalid identity (content)', async () => {
+    const identity = await IdentityHelper.generateIdentity();
+    const wrongIdentity = await IdentityHelper.generateIdentity();
+
+    const result = await DocumentHelper.stringify(identity, null, {
+      title: 'File title',
+      mimeType: 'text/plain',
+      path: '/',
+      content: Buffer.from('hello'),
+    });
+
+    try {
+      await DocumentHelper.parse(wrongIdentity, null, result);
+      throw {};
+    } catch (e) {
+      expect(e.code).to.be.equal('INVALID_SIGNATURE');
+    }
+
+    try {
+      const file = await DocumentHelper.parse(
+        wrongIdentity,
+        wrongIdentity.compressedPublicKey,
+        result
+      );
+      console.log(file);
+      throw {};
+    } catch (e) {
+      expect(e.code).to.be.equal('INVALID_SIGNATURE');
+    }
+  });
+
+  it('should fail to decrypt with an invalid identity (path)', async () => {
+    const identity = await IdentityHelper.generateIdentity();
+    const wrongIdentity = await IdentityHelper.generateIdentity();
+
+    const result = await DocumentHelper.stringify(identity, null, {
+      path: '/',
+    });
+
+    try {
+      await DocumentHelper.parse(wrongIdentity, null, result);
+      throw {};
+    } catch (e) {
+      expect(e.code).to.be.equal('INVALID_SIGNATURE');
+    }
+  });
+
+  it('should fail to decrypt with an invalid identity (path)', async () => {
+    const identity = await IdentityHelper.generateIdentity();
+    const wrongIdentity = await IdentityHelper.generateIdentity();
+
+    const result = await DocumentHelper.stringify(identity, null, {
+      metadata: {
+        key: 'value',
+      },
+    });
+
+    try {
+      await DocumentHelper.parse(wrongIdentity, null, result);
+      throw {};
+    } catch (e) {
+      expect(e.code).to.be.equal('INVALID_SIGNATURE');
+    }
   });
 
   it('should create a string version of a encrypted file with metadata content only', async () => {
@@ -100,10 +159,24 @@ describe('DocumentHelper', () => {
         metadata: {
           key: 'value',
         },
-        indexes: {
-          email: 'email@domain',
-          category: 'financial',
-        },
+        indexes: [
+          {
+            key: 'email',
+            value: 'email@domain',
+          },
+          {
+            key: 'category',
+            value: 'financial',
+          },
+        ],
+        keywords: [
+          {
+            value: 'file',
+          },
+          {
+            value: 'document',
+          },
+        ],
       }
     );
 
@@ -116,57 +189,26 @@ describe('DocumentHelper', () => {
     expect('File title').to.be.equal(file.title);
     expect('/').to.be.equal(file.path);
     expect('text/plain').to.be.equal(file.mimeType);
-    expect(Object.keys(file.indexes).length).to.be.equal(2);
+
+    expect('email').to.be.equal(file.indexes[0].key);
+    expect('email@domain').to.be.equal(file.indexes[0].value);
+    expect('value').to.be.equal(file.metadata.key);
+    expect('file').to.be.equal(file.keywords[0].value);
+    expect('document').to.be.equal(file.keywords[1].value);
     expect(
-      file.indexes[
-        '82244417f956ac7c599f191593f7e441a4fafa20a4158fd52e154f1dc4c8ed92'
-      ]
-    ).to.be.equal(
+      '82244417f956ac7c599f191593f7e441a4fafa20a4158fd52e154f1dc4c8ed92'
+    ).to.be.equal(file.indexes[0].keyHash);
+    expect(
       'a0f42a1eae5f387a50966ac4b183270eae6832d2823ca5ea9f4685fa248fdf7d'
-    );
+    ).to.be.equal(file.indexes[0].valueHash);
+
+    expect('category').to.be.equal(file.indexes[1].key);
+    expect('financial').to.be.equal(file.indexes[1].value);
     expect(
-      file.indexes[
-        'edb2cd3b74c999af70f0b7054990f2072dc6e10a847af6ed05954b8994b730fe'
-      ]
-    ).to.be.equal(
+      'edb2cd3b74c999af70f0b7054990f2072dc6e10a847af6ed05954b8994b730fe'
+    ).to.be.equal(file.indexes[1].keyHash);
+    expect(
       'fed0e4820af42571c936e28300ccb88026f72e075232358cd1fae4e802fe902b'
-    );
-    expect(file.metadata.key).to.be.equal('value');
-  });
-
-  it('should fail to stringify a content without the content and metadata attribute', async () => {
-    try {
-      const identity = await IdentityHelper.generateIdentity();
-      const targetIdentity = await IdentityHelper.generateIdentity();
-
-      await DocumentHelper.stringify(
-        identity,
-        targetIdentity.compressedPublicKey,
-        {
-          title: 'File title',
-          mimeType: 'text/plain',
-          path: '/',
-        }
-      );
-      throw {};
-    } catch (e) {
-      expect(e.code).to.be.equal('REQUIRED_FIELDS');
-    }
-  });
-
-  it('should fail to stringify a content without title, mimeType and path', async () => {
-    try {
-      const identity = await IdentityHelper.generateIdentity();
-      const targetIdentity = await IdentityHelper.generateIdentity();
-
-      await DocumentHelper.stringify(
-        identity,
-        targetIdentity.compressedPublicKey,
-        {}
-      );
-      throw {};
-    } catch (e) {
-      expect(e.code).to.be.equal('REQUIRED_FIELDS');
-    }
+    ).to.be.equal(file.indexes[1].valueHash);
   });
 });

@@ -40,114 +40,181 @@ module.exports = class DocumentHelper {
     return isBinaryPath(path);
   }
 
-  static async stringify(
+  static async _encryptIndexes(identity, targetAccount, indexes) {
+    const newIndexes = [];
+
+    for (const index of indexes) {
+      newIndexes.push({
+        key: await IdentityHelper.encryptBuffer(
+          identity,
+          targetAccount,
+          Buffer.from(this._getValue(index.key))
+        ),
+        value: await IdentityHelper.encryptBuffer(
+          identity,
+          targetAccount,
+          Buffer.from(this._getValue(index.value))
+        ),
+        keyHash: IdentityHelper.generateHash(index.key),
+        valueHash: IdentityHelper.generateHash(index.value),
+      });
+    }
+
+    return newIndexes;
+  }
+
+  static async _encryptKeywords(identity, targetAccount, keywords) {
+    const newKeywords = [];
+
+    for (const keyword of keywords) {
+      newKeywords.push({
+        value: await IdentityHelper.encryptBuffer(
+          identity,
+          targetAccount,
+          Buffer.from(this._getValue(keyword.value))
+        ),
+        valueHash: IdentityHelper.generateHash(keyword.value),
+      });
+    }
+
+    return newKeywords;
+  }
+
+  static _getValue(value) {
+    if (value === Object(value) || Array.isArray(value)) {
+      return JSON.stringify(value);
+    } else {
+      return value.toString();
+    }
+  }
+
+  static _hashAndSign(
     identity,
     targetAccount,
-    { title, path, mimeType, content, indexes, metadata, keywords }
+    document,
+    attr,
+    encryptedDocument
   ) {
-    if (!title || !path || !mimeType) {
-      throw {
-        status: 409,
-        code: 'REQUIRED_FIELDS',
-        message: 'Title, path, and mimeType are required fields',
-      };
-    }
+    const hashKey = `${attr}Hash`;
+    const signatureKey = `${hashKey}Signature`;
 
-    if (!content && !metadata) {
-      throw {
-        status: 409,
-        code: 'REQUIRED_FIELDS',
-        message: 'You must enter the content or metadata field',
-      };
-    }
+    encryptedDocument[hashKey] = IdentityHelper.generateHash(
+      this._getValue(document[attr])
+    );
 
-    if (this.indexes && !Array.isArray(this.indexes)) {
-      throw {
-        status: 409,
-        code: 'INDEXES_MUST_BE_ARRAY',
-      };
-    }
+    encryptedDocument[signatureKey] = IdentityHelper.sign(
+      identity.privateKey,
+      encryptedDocument[hashKey]
+    );
+  }
+  static async stringify(identity, targetAccount, document) {
+    const ignoredAttributes = [
+      'indexes',
+      'keywords',
+      'type',
+      'objectId',
+      'originalFileSize',
+    ];
+    const hashableAttributes = ['metadata', 'content', 'path'];
 
-    let metadataHash = null;
-    let metadataHashSignature = null;
+    const encryptedDocument = {};
 
-    if (indexes) {
-      const newIndexes = {};
-
-      for (const index in indexes) {
-        newIndexes[
-          IdentityHelper.generateHash(index)
-        ] = IdentityHelper.generateHash(indexes[index]);
+    for (const attr in document) {
+      if (ignoredAttributes.includes(attr) || document[attr] === null) {
+        encryptedDocument[attr] = document[attr];
+        continue;
       }
 
-      indexes = newIndexes;
+      if (attr === 'content') {
+        encryptedDocument[attr] = await IdentityHelper.encryptBuffer(
+          identity,
+          targetAccount,
+          document[attr]
+        );
+      } else {
+        encryptedDocument[attr] = await IdentityHelper.encryptBuffer(
+          identity,
+          targetAccount,
+          Buffer.from(this._getValue(document[attr]))
+        );
+      }
+
+      if (hashableAttributes.includes(attr)) {
+        await this._hashAndSign(
+          identity,
+          targetAccount,
+          document,
+          attr,
+          encryptedDocument
+        );
+      }
     }
 
-    if (keywords && Array.isArray(keywords)) {
-      keywords = keywords.map((keyword) =>
-        IdentityHelper.generateHash(keyword)
+    if (document.keywords) {
+      encryptedDocument.keywords = await this._encryptKeywords(
+        identity,
+        targetAccount,
+        document.keywords
       );
     }
 
-    const contentHash = content ? IdentityHelper.generateHash(content) : null;
-    const contentHashSignature = content
-      ? IdentityHelper.sign(identity.privateKey, contentHash)
-      : null;
-
-    if (metadata) {
-      const json = JSON.stringify(metadata);
-
-      metadata = await IdentityHelper.encryptBuffer(
+    if (document.indexes) {
+      encryptedDocument.indexes = await DocumentHelper._encryptIndexes(
         identity,
         targetAccount,
-        Buffer.from(json)
-      );
-      metadataHash = IdentityHelper.generateHash(json);
-      metadataHashSignature = IdentityHelper.sign(
-        identity.privateKey,
-        metadataHash
+        document.indexes
       );
     }
 
-    const file = {
-      title: await IdentityHelper.encryptBuffer(
-        identity,
-        targetAccount,
-        Buffer.from(title)
-      ),
-      path: await IdentityHelper.encryptBuffer(
-        identity,
-        targetAccount,
-        Buffer.from(path)
-      ),
-      mimeType: await IdentityHelper.encryptBuffer(
-        identity,
-        targetAccount,
-        Buffer.from(mimeType)
-      ),
-      content: content
-        ? await IdentityHelper.encryptBuffer(identity, targetAccount, content)
-        : null,
-      mimeTypeHash: IdentityHelper.generateHash(mimeType),
-      pathHash: IdentityHelper.generateHash(path),
-      contentHash,
-      contentHashSignature,
-      indexes,
-      keywords,
-      metadata,
-      metadataHash,
-      metadataHashSignature,
-      format: 'v1',
-    };
+    encryptedDocument.objectId = document.objectId;
+    encryptedDocument.type = document.type;
+    encryptedDocument.format = 'v1';
 
-    return JSON.stringify(file);
+    return JSON.stringify(encryptedDocument);
+  }
+
+  static _isJSON(str) {
+    if (/^\s*$/.test(str)) return false;
+    str = str.replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g, '@');
+    str = str.replace(
+      /"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g,
+      ']'
+    );
+    str = str.replace(/(?:^|:|,)(?:\s*\[)+/g, '');
+    return /^[\],:{}\s]*$/.test(str);
   }
 
   static async parse(identity, targetAccount, fileContent) {
-    const file = JSON.parse(fileContent);
+    const ignoredAttributes = [
+      'objectId',
+      'metadataHash',
+      'originalFileSize',
+      'metadataHashSignature',
+      'contentHash',
+      'contentHashSignature',
+      'pathHash',
+      'pathHashSignature',
+      'format',
+      'indexes',
+      'keywords',
+      'type',
+      'id',
+      'network',
+      'from',
+      'createdAt',
+      'updatedAt',
+    ];
+    const encryptedDocument = JSON.parse(fileContent);
+    const decryptedDocument = {};
 
-    const signature = file.contentHashSignature || file.metadataHashSignature;
-    const hash = file.contentHash || file.metadataHash;
+    const signature =
+      encryptedDocument.contentHashSignature ||
+      encryptedDocument.metadataHashSignature ||
+      encryptedDocument.pathHashSignature;
+    const hash =
+      encryptedDocument.contentHash ||
+      encryptedDocument.metadataHash ||
+      encryptedDocument.pathHash;
 
     let recoveredAddress = IdentityHelper.recoverAddress(
       signature,
@@ -172,25 +239,65 @@ module.exports = class DocumentHelper {
       };
     }
 
-    const [title, mimeType, path, content, metadata] = await Promise.all([
-      IdentityHelper.decryptBuffer(identity, targetAccount, file.title),
-      IdentityHelper.decryptBuffer(identity, targetAccount, file.mimeType),
-      IdentityHelper.decryptBuffer(identity, targetAccount, file.path),
-      file.content
-        ? IdentityHelper.decryptBuffer(identity, targetAccount, file.content)
-        : null,
-      file.metadata
-        ? IdentityHelper.decryptBuffer(identity, targetAccount, file.metadata)
-        : null,
-    ]);
+    for (const attr in encryptedDocument) {
+      if (
+        ignoredAttributes.includes(attr) ||
+        encryptedDocument[attr] === null
+      ) {
+        decryptedDocument[attr] = encryptedDocument[attr];
+        continue;
+      }
 
-    return {
-      ...file,
-      title: title.toString(),
-      mimeType: mimeType.toString(),
-      path: path.toString(),
-      content,
-      metadata: metadata ? JSON.parse(metadata.toString()) : null,
-    };
+      try {
+        decryptedDocument[attr] = await IdentityHelper.decryptBuffer(
+          identity,
+          targetAccount,
+          encryptedDocument[attr]
+        );
+      } catch (e) {
+        decryptedDocument[attr] = encryptedDocument[attr];
+      }
+
+      if (attr !== 'content') {
+        decryptedDocument[attr] = decryptedDocument[attr].toString();
+
+        if (
+          decryptedDocument[attr] &&
+          DocumentHelper._isJSON(decryptedDocument[attr])
+        ) {
+          decryptedDocument[attr] = JSON.parse(decryptedDocument[attr]);
+        }
+      }
+    }
+
+    if (encryptedDocument.keywords) {
+      for (const keyword of encryptedDocument.keywords) {
+        keyword.value = (
+          await IdentityHelper.decryptBuffer(
+            identity,
+            targetAccount,
+            keyword.value
+          )
+        ).toString();
+      }
+    }
+
+    if (encryptedDocument.indexes) {
+      for (const index of encryptedDocument.indexes) {
+        index.key = (
+          await IdentityHelper.decryptBuffer(identity, targetAccount, index.key)
+        ).toString();
+
+        index.value = (
+          await IdentityHelper.decryptBuffer(
+            identity,
+            targetAccount,
+            index.value
+          )
+        ).toString();
+      }
+    }
+
+    return decryptedDocument;
   }
 };
